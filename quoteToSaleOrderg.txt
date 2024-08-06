@@ -1,0 +1,48 @@
+quoteData = zoho.crm.getRelatedRecords("Quotes", "Deals", dealId);
+// info quoteData;
+for each rec in quoteData
+{
+	quote_id = rec.get("id");
+	info quote_id;
+	quote_stage = rec.get("Quote_Stage");
+	info quote_stage;
+	if (quote_stage == "Confirmed")
+	{
+		productDetails = ifnull(rec.get("Product_Details"), "");
+		// Get Product Details
+		// info productDetails;
+		pdlist = List();
+		for each eachProduct in productDetails
+		{
+			productValue = eachProduct.get("product");
+			productId = productValue.get("id");
+			productName = productValue.get("name");
+			productMap = Map();
+			productMap.put("product", {"name": productName, "id": productId});
+			productMap.put("quantity", ifnull(eachProduct.get("quantity"), "1"));
+			productMap.put("discount", ifnull(eachProduct.get("discount"), "0.00"));
+			productMap.put("net_total", ifnull(eachProduct.get("net_total"), "0.00"));
+			productMap.put("list_price", ifnull(eachProduct.get("list_price"), "0.00"));
+			productMap.put("unit_price", ifnull(eachProduct.get("unit_price"), "0.00"));
+			productMap.put("product_description", ifnull(eachProduct.get("product_description"), "0.00"));
+			productMap.put("total", ifnull(eachProduct.get("total"), "0.00"));
+			pdlist.add(productMap);
+		}
+		saleOrderMap = Map();
+		saleOrderMap.put("Product_Details", pdlist);
+		saleOrderMap.put("Account_Name", ifnull(rec.get("Account_Name").get("id"), ""));
+		saleOrderMap.put("Contact_Name", ifnull(rec.get("Contact_Name").get("id"), ""));
+		saleOrderMap.put("Deal_Name", ifnull(rec.get("Deal_Name").get("id"), ""));
+		saleOrderMap.put("Subject", ifnull(rec.get("Subject"), ""));
+		saleOrderMap.put("Terms_and_Conditions", ifnull(rec.get("Terms_and_Conditions"), ""));
+		saleOrderMap.put("Discount", ifnull(rec.get("Discount"), "0.00"));
+		saleOrderMap.put("Adjustment", ifnull(rec.get("Adjustment"), "0.00"));
+		saleOrderMap.put("Description", ifnull(rec.get("Description"), ""));
+		saleOrderRecord = zoho.crm.createRecord("Sales_Orders", saleOrderMap);
+		info saleOrderRecord;
+	}
+	else
+	{
+		info "don't convert it to a sales order";
+	}
+}
