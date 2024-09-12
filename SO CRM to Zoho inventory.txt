@@ -1,0 +1,80 @@
+// Auth: Web tech cloud - A
+// Fetch Sales Order Data
+soData = zoho.crm.getRecordById("Sales_Orders", sId);
+
+// Organization ID
+orgId = 839238943;
+
+// Extract Sales Order ID
+soId = soData.get("id");
+
+// Extract product details from the Sales Order
+product_Details = soData.get("Product_Details");
+product_list = List();
+
+for each productData in product_Details {
+    product = productData.get("product");
+    productName = product.get("name");
+
+    // Fetch product details from Zoho Inventory Items
+    item_map = Map();
+    item_map.put("name", productName);
+    inventoryItems = zoho.inventory.getRecords("items", orgId, item_map, "crm").get("items");
+
+    for each itemsDetails in inventoryItems {
+        itemName = itemsDetails.get("name");
+        description = itemsDetails.get("description");
+    }
+
+    // Setting up product map for Zoho Inventory
+    Inventory_Product_Map = Map();
+    Inventory_Product_Map.put("name", itemName);
+    Inventory_Product_Map.put("description", description);
+    Inventory_Product_Map.put("quantity", productData.get("quantity"));
+    Inventory_Product_Map.put("discount", productData.get("Discount"));
+    Inventory_Product_Map.put("rate", productData.get("list_price"));
+    Inventory_Product_Map.put("sales_rate", productData.get("list_price"));
+    Inventory_Product_Map.put("item_total", productData.get("total"));
+    Inventory_Product_Map.put("item_sub_total", productData.get("total_after_discount"));
+    product_list.add(Inventory_Product_Map);
+}
+
+// Fetch customer name from Sales Order data
+contactName = soData.get("Contact_Name").get("name");
+info "customer name: " + contactName;
+
+// Fetch customer details from Zoho Inventory using dynamic customer name
+query_param = Map();
+query_param.put("customer_name", contactName); // Use dynamic contactName
+response = zoho.inventory.getRecords("contacts", orgId, query_param, "crm");
+
+// Handle response to find correct customer
+customer_id = "";
+for each contactsData in response.get("contacts") {
+    customer_name = contactsData.get("customer_name");
+    customer_id = contactsData.get("contact_id");
+    info customer_name;
+    info customer_id;
+
+    // Break after finding the first match
+    break;
+}
+
+// Due date handling in case of null value in CRM
+addDate = zoho.currentdate.toDate().addDay(4);
+dueDate = ifnull(soData.get("Due_Date"), addDate);
+
+// Create Sales Order map
+soMap = Map();
+soMap.put("line_items", product_list);
+soMap.put("customer_id", customer_id);
+soMap.put("customer_name", customer_name);
+soMap.put("date", dueDate);
+soMap.put("salesperson_name", soData.get("Owner").get("name"));
+
+// Log Sales Order map for verification
+info soMap;
+
+// Create Sales Order in Zoho Inventory
+create_so_in_inventory = zoho.inventory.createRecord("salesorders", orgId, soMap, "crm");
+info create_so_in_inventory;
